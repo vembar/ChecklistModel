@@ -122,32 +122,55 @@ class GRU(object):
                # Initialize the bias vector, h_0, to the zero vector
         self.h_0 = shared((hidden_dim,), name + '__h_0')
 
+        # changes in GRU unit to incorporate checklists
+        self.z = shared((hidden_dim,hidden_dim), name + '__z')
+        self.y = shared((hidden_dim,hidden_dim), name + '__y')
+        self.w_s = shared((hidden_dim,hidden_dim), name + '__w_s')
+        self.w_q = shared((hidden_dim,hidden_dim), name + '__w_q')
+        self.u_s = shared((hidden_dim,hidden_dim), name + '__u_s')
+        self.u_q = shared((hidden_dim,hidden_dim), name + '__u_q')
+        self.u_g = shared((hidden_dim, hidden_dim), name + '__u_g')
         # Define parameters
         self.params = [self.w_z, self.u_z, self.b_z,
                        self.w_r, self.u_r, self.b_r,
                        self.w_c, self.u_c, self.b_c,
-                       self.h_0]
+                       self.h_0,
+                       self.z, self.y, self.u_g,
+                       self.w_s,self.w_q,
+                       self.u_s,self.u_q]
 
-    def link(self, input):
+    def link(self, input, g, et_new):
         """
         Propagate the input through the network and return the last hidden vector.
         The whole sequence is also accessible through self.h
         """
 
         def recurrence(x_t, h_tm1):
-            z_t = T.nnet.sigmoid(T.dot(x_t, self.w_z) + T.dot(h_tm1, self.u_z) + self.b_z)
-            r_t = T.nnet.sigmoid(T.dot(x_t, self.w_r) + T.dot(h_tm1, self.u_r) + self.b_r)
-            c_t = T.tanh(T.dot(x_t, self.w_c) + T.dot(r_t * h_tm1, self.u_c) + self.b_c)
+            z_t = T.nnet.sigmoid(T.dot(x_t, self.w_z) + T.dot(h_tm1, self.u_z)
+                                 + self.b_z)
+            r_t = T.nnet.sigmoid(T.dot(x_t, self.w_r) + T.dot(h_tm1, self.u_r)
+                                 + self.b_r)
+            s_t = T.nnet.sigmoid(T.dot(x_t, self.w_s) + T.dot(h_tm1, self.u_s))
+            q_t = T.nnet.sigmoid(T.dot(x_t, self.w_q) + T.dot(h_tm1, self.u_q))
+            c_t = T.tanh(T.dot(x_t, self.w_c) + T.dot(r_t * h_tm1, self.u_c) +
+                        s_t * T.dot(self.g, self.y) +
+                        q_t * T.dot(np.sum(self.et_new,axis=1).transpose(),
+                              T.dot(self.et_new,self.z)).transpose() + self.b_c)
             h_t = (1 - z_t) * h_tm1 + z_t * c_t
             return h_t
 
         # If we used batches, we have to permute the first and second dimension.
+        self.h_0 = T.dot(self.h_0,self.u_g)
+
         if self.with_batch:
             self.input = input.dimshuffle(1, 0, 2)
             outputs_info = T.alloc(self.h_0, self.input.shape[1], self.hidden_dim)
         else:
             self.input = input
             outputs_info = self.h_0
+
+        self.g = g
+        self.et_new = et_new
 
         h, _ = theano.scan(
             fn=recurrence,
