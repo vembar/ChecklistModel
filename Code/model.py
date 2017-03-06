@@ -11,15 +11,15 @@ class GRU(nn.Module):
     def initialize_params(self):
         self.w_z = uniform_init((self.input_dim, self.hidden_dim))
         self.u_z = orthogonal_init((self.hidden_dim, self.hidden_dim))
-        self.b_z = uniform_init(self.hidden_dim)
+        self.b_z = uniform_init((self.hidden_dim))
 
         self.w_r = uniform_init((self.input_dim, self.hidden_dim))
         self.u_r = orthogonal_init((self.hidden_dim, self.hidden_dim))
-        self.b_r = uniform_init(self.hidden_dim)
+        self.b_r = uniform_init((self.hidden_dim))
 
         self.w_c = uniform_init((self.input_dim, self.hidden_dim))
         self.u_c = orthogonal_init((self.hidden_dim, self.hidden_dim))
-        self.b_c = uniform_init(self.hidden_dim)
+        self.b_c = uniform_init((self.hidden_dim))
 
         self.z = uniform_init((self.hidden_dim, self.hidden_dim))
         self.y = uniform_init((self.hidden_dim, self.hidden_dim))
@@ -90,4 +90,3 @@ class GRU(nn.Module):
         output = torch.cat(output, 0).view(input_sample.size(0), *output[0].size())
 
         return output, hidden
-
