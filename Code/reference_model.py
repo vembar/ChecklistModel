@@ -9,8 +9,8 @@ class CheckListModel(object):
         self.W_o = uniform_init((self.vocab_dim, self.embedding_dim))
         self.b_o = uniform_init((self.vocab_dim))
         self.o_t = uniform_init((1, 3))
-        self.w_t = uniform_init((self.vocab_dim))  # f_t_gru, f_t_new, f_t_used
-        self.f_t = uniform_init((1, 3))
+        self.w_t = uniform_init((self.vocab_dim))  
+        self.f_t = uniform_init((1, 3)) # f_t_gru, f_t_new, f_t_used
 
         self.P = uniform_init((self.embedding_dim, self.embedding_dim))
 
